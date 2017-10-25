@@ -2,16 +2,9 @@ import express from "express";
 import fs from "fs";
 import readline from "readline";
 
-import { parseHealing, parseDamage } from "../utils/parseLogs";
+import { parseHealing, parseDamage, calculateCrit, getAllCasters, calculateOverhealing } from "../utils/parseLogs";
 
 const router = express.Router();
-
-router.get("/", (req, res) => {
-  return res.status(200).json({
-    success: true,
-    data: "success"
-  });
-});
 
 router.post("/upload", (req, res) => {
   if (!req.files)
@@ -24,24 +17,28 @@ router.post("/upload", (req, res) => {
   sampleFile.mv(`./uploaded/logs/${sampleFile.name}`, err => {
     if (err) return res.status(500).json({ success: false, data: err });
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        message: "Log uploaded",
-        file: sampleFile.name
-      }
-    });
+    res.redirect(`/api/logs/parse/?valid=${sampleFile.name}`);
+
+    // return res.status(200).json({
+    //   success: true,
+    //   data: {
+    //     message: "Log uploaded",
+    //     file: sampleFile.name
+    //   }
+    // });
   });
 });
 
-router.post("/parse", (req, res) => {
+router.get("/parse", (req, res) => {
+  const fileName = req.query.valid;
   const healing = [];
   const damage = [];
+  const critPercentage = {};
 
   readline
     .createInterface({
       input: fs.createReadStream(
-        "./uploaded/logs/cl-2017-10-23-124209-Gorshield.log",
+        `./uploaded/logs/${fileName}`,
         {
           encoding: "ucs2"
         }
@@ -56,13 +53,21 @@ router.post("/parse", (req, res) => {
       }
     })
     .on("close", () => {
+      const damageCasters = getAllCasters(damage);
+      const healingCasters = getAllCasters(healing);
+      const critInfoDamage = damageCasters.map((caster) => ({[caster]: calculateCrit(caster, damage)}));
+      const critInfoHealing = healingCasters.map((caster) => ({[caster]: calculateCrit(caster, healing)}));
+      const overHealing = healingCasters.map((caster) => ({[caster]: calculateOverhealing(caster, healing)}));
+
+      critPercentage.damage = critInfoDamage;
+      critPercentage.healing = critInfoHealing;
+
       return res.status(200).json({
         success: true,
-        data: { healing, damage }
+        data: { healing, damage, critPercentage, overHealing }
       });
-
-      process.exit(0);
     });
 });
+
 
 export default router;

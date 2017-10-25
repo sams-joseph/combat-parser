@@ -2,24 +2,6 @@ import abilities from "../json/abilities.json";
 
 const player = "Player";
 
-export function parseHealing(line) {
-  const data = {};
-  data.timestamp = getTimestamp(line);
-  data.caster = getCaster(line);
-  data.spell = getSpell(line.indexOf("'s") + 3, "heals", line);
-  data.target = getTarget("heals", line);
-  return data;
-}
-
-export function parseDamage(line) {
-  const data = {};
-  data.timestamp = getTimestamp(line);
-  data.caster = getCaster(line);
-  data.spell = getSpell(line.indexOf("'s") + 3, "hits", line);
-  data.target = getTarget("hits", line);
-  return data;
-}
-
 function getTimestamp(line) {
   const parts = line
     .slice(0, 10)
@@ -48,12 +30,18 @@ function getTimestamp(line) {
 }
 
 function getCaster(line) {
-  let caster = {};
+  const caster = {};
   if (line.indexOf("Your") < 0 || line.indexOf("You") < 0) {
     caster.name = line.slice(21, line.indexOf("'s"));
   } else caster.name = player;
 
   return caster;
+}
+
+export function formatSpellName(string) {
+  const stringRemoveSpecials = string.replace(/[^a-zA-Z ]/g, "");
+  const stringToUnderscore = stringRemoveSpecials.replace(/ /g, "_");
+  return stringToUnderscore.toLowerCase();
 }
 
 function getSpell(index, event, line) {
@@ -115,32 +103,68 @@ function getTarget(event, line) {
   return data;
 }
 
-export function filterBySpell(object, filter) {
-  const result = object.filter(function(obj) {
-    return obj.spell.spellName == filter;
+export function getAllCasters(object) {
+  const casters = [];
+  object.forEach((obj) => {
+    if(casters.indexOf(obj.caster.name) < 0) {
+      casters.push(obj.caster.name)
+    }
   });
+
+  return casters;
+}
+
+export function filterBySpell(object, filter) {
+  const result = object.filter((obj) => obj.spell.spellName == filter);
 
   return result;
 }
 
 export function filterByCaster(object, filter) {
-  const result = object.filter(function(obj) {
-    return obj.caster.name == filter;
-  });
+  const result = object.filter((obj) => obj.caster.name === filter);
 
   return result;
 }
 
 export function filterByTarget(object, filter) {
-  const result = object.filter(function(obj) {
-    return obj.target.name == filter;
-  });
+  const result = object.filter((obj) => obj.target.name === filter);
 
   return result;
 }
 
-export function formatSpellName(string) {
-  const stringRemoveSpecials = string.replace(/[^a-zA-Z ]/g, "");
-  const stringToUnderscore = stringRemoveSpecials.replace(/ /g, "_");
-  return stringToUnderscore.toLowerCase();
+export function calculateCrit(caster, object) {
+  const castersActions = filterByCaster(object, caster);
+  const crits = castersActions.filter((obj) =>  obj.spell.critical);
+  const critPercentage = crits.length / castersActions.length;
+
+  return critPercentage;
+}
+
+export function calculateOverhealing(caster, object) {
+  let totalOverhealed = 0;
+  const castersActions = filterByCaster(object, caster);
+  const overhealing = castersActions.filter((obj) =>  obj.spell.extra);
+  overhealing.forEach((overheal) => {
+      totalOverhealed += Number(overheal.spell.extra.amount);
+  }); 
+
+  return totalOverhealed;
+}
+
+export function parseHealing(line) {
+  const data = {};
+  data.timestamp = getTimestamp(line);
+  data.caster = getCaster(line);
+  data.spell = getSpell(line.indexOf("'s") + 3, "heals", line);
+  data.target = getTarget("heals", line);
+  return data;
+}
+
+export function parseDamage(line) {
+  const data = {};
+  data.timestamp = getTimestamp(line);
+  data.caster = getCaster(line);
+  data.spell = getSpell(line.indexOf("'s") + 3, "hits", line);
+  data.target = getTarget("hits", line);
+  return data;
 }
