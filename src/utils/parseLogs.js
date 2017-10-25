@@ -88,8 +88,6 @@ function getSpell(index, event, line) {
     data.meta = abilities[formatSpellName(data.spellName)];
   }
 
-  if(data.extra) data.amount += data.extra.amount;
-
   return data;
 }
 

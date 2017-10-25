@@ -12,22 +12,23 @@ router.post("/upload", (req, res) => {
       .status(400)
       .json({ success: false, data: "No files were uploaded" });
 
-  const sampleFile = req.files.sampleFile;
+  const combatLog = req.files.combatLog;
 
-  sampleFile.mv(`./uploaded/logs/${sampleFile.name}`, err => {
+  combatLog.mv(`./uploaded/logs/${combatLog.name}`, err => {
     if (err) return res.status(500).json({ success: false, data: err });
 
-    res.redirect(`/api/logs/parse/?valid=${sampleFile.name}`);
+    res.redirect(`/api/logs/parse/?fileName=${combatLog.name}`);
   });
 });
 
 router.get("/parse", (req, res) => {
-  const fileName = req.query.valid;
+  if(!req.query.fileName) return res.status(400).json({ success: false, data: "This route requires a query string to be passed in the URL" });
+  const fileName = req.query.fileName;
   const healing = [];
   const damage = [];
   const critPercentage = {};
-
   const playerName = getPlayerName(fileName);
+
 
   readline
     .createInterface({
