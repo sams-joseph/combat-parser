@@ -29,11 +29,11 @@ function getTimestamp(line) {
   return timestamp;
 }
 
-function getCaster(line) {
+function getCaster(line, playerName) {
   const caster = {};
   if (line.indexOf("Your") < 0 || line.indexOf("You") < 0) {
     caster.name = line.slice(21, line.indexOf("'s"));
-  } else caster.name = player;
+  } else caster.name = playerName;
 
   return caster;
 }
@@ -65,15 +65,15 @@ function getSpell(index, event, line) {
   }
 
   if (event === "heals")
-    data.amount = line.slice(
+    data.amount = Number(line.slice(
       line.indexOf("for") + 4,
       line.indexOf("points") - 1
-    );
+    ));
   else if (event === "hits")
-    data.amount = line.slice(
+    data.amount = Number(line.slice(
       line.indexOf("for") + 4,
       line.indexOf("damage") - 1
-    );
+    ));
 
   if (
     line.includes("overhealed") ||
@@ -81,24 +81,26 @@ function getSpell(index, event, line) {
     line.includes("overkill")
   ) {
     const arr = line.match(/\(([^)]+)\)/)[1].split(" ");
-    data.extra = { amount: arr[0], label: arr[1] };
+    data.extra = { amount: Number(arr[0]), label: arr[1] };
   }
 
   if (abilities[formatSpellName(data.spellName)]) {
     data.meta = abilities[formatSpellName(data.spellName)];
   }
 
+  if(data.extra) data.amount += data.extra.amount;
+
   return data;
 }
 
-function getTarget(event, line) {
+function getTarget(event, line, playerName) {
   const data = {};
   data.name = line.slice(
     line.indexOf(event) + event.length + 1,
     line.indexOf("for") - 1
   );
 
-  if (data.name === "you") data.name = player;
+  if (data.name === "you") data.name = playerName;
 
   return data;
 }
@@ -151,20 +153,26 @@ export function calculateOverhealing(caster, object) {
   return totalOverhealed;
 }
 
-export function parseHealing(line) {
+export function parseHealing(line, playerName) {
   const data = {};
   data.timestamp = getTimestamp(line);
-  data.caster = getCaster(line);
+  data.caster = getCaster(line, playerName);
   data.spell = getSpell(line.indexOf("'s") + 3, "heals", line);
-  data.target = getTarget("heals", line);
+  data.target = getTarget("heals", line, playerName);
   return data;
 }
 
-export function parseDamage(line) {
+export function parseDamage(line, playerName) {
   const data = {};
   data.timestamp = getTimestamp(line);
-  data.caster = getCaster(line);
+  data.caster = getCaster(line, playerName);
   data.spell = getSpell(line.indexOf("'s") + 3, "hits", line);
-  data.target = getTarget("hits", line);
+  data.target = getTarget("hits", line, playerName);
   return data;
+}
+
+export function getPlayerName(fileName) {
+  const fileNameParts = fileName.split('-');
+  const playerName = fileNameParts[fileNameParts.length - 1].slice(0, -4);
+  return playerName;
 }

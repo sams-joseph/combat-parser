@@ -2,7 +2,7 @@ import express from "express";
 import fs from "fs";
 import readline from "readline";
 
-import { parseHealing, parseDamage, calculateCrit, getAllCasters, calculateOverhealing } from "../utils/parseLogs";
+import { parseHealing, parseDamage, calculateCrit, getAllCasters, calculateOverhealing, getPlayerName } from "../utils/parseLogs";
 
 const router = express.Router();
 
@@ -18,14 +18,6 @@ router.post("/upload", (req, res) => {
     if (err) return res.status(500).json({ success: false, data: err });
 
     res.redirect(`/api/logs/parse/?valid=${sampleFile.name}`);
-
-    // return res.status(200).json({
-    //   success: true,
-    //   data: {
-    //     message: "Log uploaded",
-    //     file: sampleFile.name
-    //   }
-    // });
   });
 });
 
@@ -34,6 +26,8 @@ router.get("/parse", (req, res) => {
   const healing = [];
   const damage = [];
   const critPercentage = {};
+
+  const playerName = getPlayerName(fileName);
 
   readline
     .createInterface({
@@ -47,9 +41,9 @@ router.get("/parse", (req, res) => {
     })
     .on("line", line => {
       if (line.includes("heals")) {
-        healing.push(parseHealing(line));
+        healing.push(parseHealing(line, playerName));
       } else if (line.includes("hits")) {
-        damage.push(parseDamage(line));
+        damage.push(parseDamage(line, playerName));
       }
     })
     .on("close", () => {
