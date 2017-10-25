@@ -14,7 +14,7 @@ router.post("/upload", (req, res) => {
 
   const combatLog = req.files.combatLog;
 
-  combatLog.mv(`./uploaded/logs/${combatLog.name}`, err => {
+  combatLog.mv(`./public/uploads/logs/${combatLog.name}`, err => {
     if (err) return res.status(500).json({ success: false, data: err });
 
     res.redirect(`/api/logs/parse/?fileName=${combatLog.name}`);
@@ -33,7 +33,7 @@ router.get("/parse", (req, res) => {
   readline
     .createInterface({
       input: fs.createReadStream(
-        `./uploaded/logs/${fileName}`,
+        `./public/uploads/logs/${fileName}`,
         {
           encoding: "ucs2"
         }
