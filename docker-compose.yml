@@ -1,0 +1,31 @@
+version: '2'
+services:
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes_from:
+      - mongodata
+    restart: always
+    container_name: warlogs-mongo
+  mongodata:
+    image: tianon/true
+    volumes:
+      - /data/db
+    container_name: warlogs-data
+  core:
+    image: warlogs/core
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/usr/src
+    links:
+      - mongo
+    container_name: warlogs-core
+  ui:
+    image: warlogs/ui
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/usr/src
+    container_name: warlogs-ui

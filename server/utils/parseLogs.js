@@ -65,15 +65,13 @@ function getSpell(index, event, line) {
   }
 
   if (event === "heals")
-    data.amount = Number(line.slice(
-      line.indexOf("for") + 4,
-      line.indexOf("points") - 1
-    ));
+    data.amount = Number(
+      line.slice(line.indexOf("for") + 4, line.indexOf("points") - 1)
+    );
   else if (event === "hits")
-    data.amount = Number(line.slice(
-      line.indexOf("for") + 4,
-      line.indexOf("damage") - 1
-    ));
+    data.amount = Number(
+      line.slice(line.indexOf("for") + 4, line.indexOf("damage") - 1)
+    );
 
   if (
     line.includes("overhealed") ||
@@ -91,7 +89,7 @@ function getSpell(index, event, line) {
   return data;
 }
 
-function getTarget(event, line, playerName) {
+export function getTarget(event, line, playerName) {
   const data = {};
   data.name = line.slice(
     line.indexOf(event) + event.length + 1,
@@ -105,9 +103,9 @@ function getTarget(event, line, playerName) {
 
 export function getAllCasters(object) {
   const casters = [];
-  object.forEach((obj) => {
-    if(casters.indexOf(obj.caster.name) < 0) {
-      casters.push(obj.caster.name)
+  object.forEach(obj => {
+    if (casters.indexOf(obj.caster.name) < 0) {
+      casters.push(obj.caster.name);
     }
   });
 
@@ -115,26 +113,26 @@ export function getAllCasters(object) {
 }
 
 export function filterBySpell(object, filter) {
-  const result = object.filter((obj) => obj.spell.spellName == filter);
+  const result = object.filter(obj => obj.spell.spellName == filter);
 
   return result;
 }
 
 export function filterByCaster(object, filter) {
-  const result = object.filter((obj) => obj.caster.name === filter);
+  const result = object.filter(obj => obj.caster.name === filter);
 
   return result;
 }
 
 export function filterByTarget(object, filter) {
-  const result = object.filter((obj) => obj.target.name === filter);
+  const result = object.filter(obj => obj.target.name === filter);
 
   return result;
 }
 
 export function calculateCrit(caster, object) {
   const castersActions = filterByCaster(object, caster);
-  const crits = castersActions.filter((obj) =>  obj.spell.critical);
+  const crits = castersActions.filter(obj => obj.spell.critical);
   const critPercentage = crits.length / castersActions.length;
 
   return critPercentage;
@@ -143,12 +141,24 @@ export function calculateCrit(caster, object) {
 export function calculateOverhealing(caster, object) {
   let totalOverhealed = 0;
   const castersActions = filterByCaster(object, caster);
-  const overhealing = castersActions.filter((obj) =>  obj.spell.extra);
-  overhealing.forEach((overheal) => {
-      totalOverhealed += Number(overheal.spell.extra.amount);
-  }); 
+  const overhealing = castersActions.filter(obj => obj.spell.extra);
+  overhealing.forEach(overheal => {
+    totalOverhealed += Number(overheal.spell.extra.amount);
+  });
 
   return totalOverhealed;
+}
+
+export function parseAll(line, playerName) {
+  const data = {};
+  data.timestamp = getTimestamp(line);
+  data.caster = getCaster(line, playerName);
+  if (line.includes("heals"))
+    data.spell = getSpell(line.indexOf("'s") + 3, "heals", line);
+  else if (line.includes("hits"))
+    data.spell = getSpell(line.indexOf("'s") + 3, "hits", line);
+  data.target = getTarget("heals", line, playerName);
+  return data;
 }
 
 export function parseHealing(line, playerName) {
@@ -170,7 +180,27 @@ export function parseDamage(line, playerName) {
 }
 
 export function getPlayerName(fileName) {
-  const fileNameParts = fileName.split('-');
-  const playerName = fileNameParts[fileNameParts.length - 1].slice(0, -4);
+  const fileNameParts = fileName.split("-");
+  const playerName = fileNameParts[fileNameParts.length - 1];
   return playerName;
+}
+
+export function parseDeaths(line, playerName) {
+  const data = {};
+  data.timestamp = getTimestamp(line);
+  data.player = playerName;
+
+  return data;
+}
+
+export function getCareer(object, playerName) {
+  const playerActions = filterByCaster(object, playerName);
+  let career = "No career found";
+  playerActions.forEach(obj => {
+    if (obj.spell.meta) {
+      career = obj.spell.meta.career;
+    }
+  });
+
+  return career;
 }
