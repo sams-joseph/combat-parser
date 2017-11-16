@@ -14,13 +14,22 @@ services:
       - /data/db
     container_name: warlogs-data
   core:
+    build:
+      context: .
+      args:
+        - NODE_ENV=development
+      dockerfile: Dockerfile
     image: warlogs/core
+    entrypoint: bash docker/main-launch.sh
     ports:
       - "5000:5000"
     volumes:
       - .:/usr/src
     links:
       - mongo
+    environment:
+      - NODE_ENV=development
+      - MONGO_URL=mongodb://mongo/api
     container_name: warlogs-core
   ui:
     image: warlogs/ui

@@ -1,5 +1,8 @@
 FROM node:6-alpine
 
+ARG NODE_ENV=production
+ENV NODE_ENV $NODE_ENV
+
 ENV NPM_CONFIG_LOGLEVEL warn
 
 RUN apk update && apk add bash && apk add curl && apk add git
@@ -8,14 +11,8 @@ RUN mkdir -p /usr/src
 
 WORKDIR /usr/src
 
-RUN npm install -g babel-cli
-
-COPY package.json package.json
-
-RUN npm install && npm cache clean
-
 COPY . .
 
-RUN npm run build
+ENV PATH /usr/src/node_modules/.bin:$PATH
 
-CMD ["node", "bin/production"]
+CMD ["bash"]

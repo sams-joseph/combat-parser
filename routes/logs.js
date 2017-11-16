@@ -1,9 +1,9 @@
-import express from "express";
-import fs from "fs";
-import readline from "readline";
-import Log from "../models/logs";
+const express = require('express');
+const fs = require('fs');
+const readline = require('readline');
+const Log = require('../models/logs');
 
-import {
+const {
   parseHealing,
   parseDamage,
   parseAll,
@@ -12,24 +12,21 @@ import {
   parseDeaths,
   filterByTarget,
   filterByCaster,
-  getAllCasters
-} from "../utils/parseLogs";
+  getAllCasters,
+} = require('../utils/parseLogs');
 
 const router = express.Router();
 
-router.get("/", (req, res) => {
+router.get('/', (req, res) => {
   Log.find({}).then(logs => res.status(200).json({ logs }));
 });
 
-router.post("/", (req, res) => {
-  if (!req.files)
-    return res
-      .status(400)
-      .json({ success: false, data: "No files were uploaded" });
+router.post('/', (req, res) => {
+  if (!req.files) return res.status(400).json({ success: false, data: 'No files were uploaded' });
 
-  const combatLog = req.files.combatLog;
+  const { combatLog } = req.files;
 
-  combatLog.mv(`./public/uploads/logs/${combatLog.name}.txt`, err => {
+  combatLog.mv(`./public/uploads/logs/${combatLog.name}.txt`, (err) => {
     if (err) return res.status(500).json({ success: false, data: err });
 
     const fileName = combatLog.name;
@@ -43,24 +40,25 @@ router.post("/", (req, res) => {
     readline
       .createInterface({
         input: fs.createReadStream(`./public/uploads/logs/${fileName}.txt`, {
-          encoding: "ucs2"
+          encoding: 'ucs2',
         }),
-        terminal: false
+        terminal: false,
       })
-      .on("line", line => {
+      .on('line', (line) => {
         raw.push(parseAll(line, playerName));
-        if (line.includes("heals")) {
+        if (line.includes('heals')) {
           healing.push(parseHealing(line, playerName));
-        } else if (line.includes("hits")) {
+        } else if (line.includes('hits')) {
           damage.push(parseDamage(line, playerName));
-          if (getTarget("hits", line, playerName).name === playerName)
+          if (getTarget('hits', line, playerName).name === playerName) {
             damageTaken.push(parseDamage(line, playerName));
-        } else if (line.includes("You are dead")) {
+          }
+        } else if (line.includes('You are dead')) {
           deaths.push(parseDeaths(line, playerName));
         }
       })
-      .on("close", () => {
-        fs.unlink(`./public/uploads/logs/${fileName}.txt`, error => {
+      .on('close', () => {
+        fs.unlink(`./public/uploads/logs/${fileName}.txt`, (error) => {
           if (error) {
             throw error;
           }
@@ -74,29 +72,34 @@ router.post("/", (req, res) => {
           damageTaken,
           deaths,
           damageCasters: getAllCasters(damage),
-          healingCasters: getAllCasters(healing)
+          healingCasters: getAllCasters(healing),
         })
           .then(log => res.status(200).json({ log }))
           .catch(error => res.status(400).json({ errors: error.errors }));
       });
+
+    return undefined;
   });
+
+  return undefined;
 });
 
-router.get("/:id", (req, res) => {
+router.get('/:id', (req, res) => {
   Log.findOne({ _id: req.params.id })
     .then(log => res.status(200).json({ log }))
     .catch(err => res.status(400).json({ errors: err }));
 });
 
-router.get("/filter/:id", (req, res) => {
-  if (!req.query.unit)
+router.get('/filter/:id', (req, res) => {
+  if (!req.query.unit) {
     return res.status(400).json({
       success: false,
-      data: "This route requires a query string to be passed in the URL"
+      data: 'This route requires a query string to be passed in the URL',
     });
+  }
   Log.findOne({ _id: req.params.id })
-    .then(log => {
-      const unit = req.query.unit;
+    .then((log) => {
+      const { unit } = req.query;
       const logFile = log;
       logFile.healing = filterByCaster(log.healing, unit);
       logFile.damage = filterByCaster(log.damage, unit);
@@ -107,6 +110,8 @@ router.get("/filter/:id", (req, res) => {
       return res.status(200).json({ log: logFile });
     })
     .catch(err => res.status(400).json({ errors: err }));
+
+  return undefined;
 });
 
-export default router;
+module.exports = router;

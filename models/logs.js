@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require('mongoose');
 
 const schema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -9,7 +9,9 @@ const schema = new mongoose.Schema({
   damageTaken: { type: Array },
   deaths: { type: Array },
   damageCasters: { type: Array },
-  healingCasters: { type: Array }
+  healingCasters: { type: Array },
 });
 
-export default mongoose.model("Log", schema);
+const Log = mongoose.model('Log', schema);
+// export default mongoose.model("Log", schema);
+module.exports = Log;
